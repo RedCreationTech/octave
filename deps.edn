@@ -12,8 +12,6 @@
   org.slf4j/slf4j-nop         {:mvn/version "2.0.16"}
   cheshire/cheshire           {:mvn/version "5.13.0"}}
  :aliases
- {:dev {:jvm-opts ["-Dconf=config.edn"]}
-  :uber {:deps {uberdeps/uberdeps {:mvn/version "1.1.0"}}
-         :main-opts ["-m" "uberdeps.uberjar"]}}
- :jvm-opts ["-Dconf=config.edn"]
- :main ocvate.core}
+ {:uberdeps
+  {:deps {uberdeps/uberdeps {:mvn/version "1.1.0"}}
+   :main-opts ["-m" "uberdeps.uberjar"]}}}

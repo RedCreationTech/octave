@@ -116,6 +116,7 @@
 
 (defn api-all [_]
   (try
+    (println "📡 前端请求 /api/all")
     (let [raw (db/get-all-data)]
       (ok (reduce-kv (fn [m k v] (assoc m (name k) (transform-rows v))) {} raw)))
     (catch Exception e (err (.getMessage e)))))
