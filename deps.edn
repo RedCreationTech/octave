@@ -1,4 +1,4 @@
-{:paths ["src" "resources" "sql"]
+{:paths ["src" "resources"]
  :deps
  {org.clojure/clojure         {:mvn/version "1.12.0"}
   ring/ring-core              {:mvn/version "1.13.0"}
@@ -7,9 +7,8 @@
   compojure/compojure         {:mvn/version "1.7.1"}
   org.clojure/java.jdbc       {:mvn/version "0.7.12"}
   com.zaxxer/HikariCP         {:mvn/version "6.2.1"}
-  com.layerware/hugsql-core {:mvn/version "0.5.3"}
-  com.layerware/hugsql-adapter-clojure-jdbc {:mvn/version "0.5.3"}
   com.oracle.database.jdbc/ojdbc11 {:mvn/version "21.5.0.0"}
+  org.xerial/sqlite-jdbc      {:mvn/version "3.49.1.0"}
   org.slf4j/slf4j-nop         {:mvn/version "2.0.16"}
   cheshire/cheshire           {:mvn/version "5.13.0"}}
  :aliases
