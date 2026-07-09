@@ -73,18 +73,18 @@ sqlplus scott/tiger@XE @sql/oracle-init.sql
 
 `sql/oracle-init.sql` 包含 10 张表的完整 DDL，与前端 `state.data` 一一对应：
 
-| 表名 | 前端字段 | 说明 |
-|------|---------|------|
-| `dept_rank` | `departments` | 部门资产统计 |
-| `asset_type` | `assetTypes` | 资产类型统计 |
-| `depreciation` | `depreciation` | 折旧到期统计 |
-| `annual_dynamics` | `annualDynamics` | 年度资产动态 |
-| `outbound_summary` | `outboundSummary` | 出库汇总 |
-| `outbound_details` | `outboundDetails` | 出库明细 |
-| `repairs` | `repairs` | 维修明细 |
-| `monthly_fuel` | `monthlyFuel` | 月度油耗 |
-| `department_fuel` | `departmentFuel` | 部门油耗 |
-| `vehicle_fuel` | `vehicleFuel` | 单车油耗 |
+| 表名               | 前端字段          | 说明         |
+|--------------------|-------------------|--------------|
+| `dept_rank`        | `departments`     | 部门资产统计 |
+| `asset_type`       | `assetTypes`      | 资产类型统计 |
+| `depreciation`     | `depreciation`    | 折旧到期统计 |
+| `annual_dynamics`  | `annualDynamics`  | 年度资产动态 |
+| `outbound_summary` | `outboundSummary` | 出库汇总     |
+| `outbound_details` | `outboundDetails` | 出库明细     |
+| `repairs`          | `repairs`         | 维修明细     |
+| `monthly_fuel`     | `monthlyFuel`     | 月度油耗     |
+| `department_fuel`  | `departmentFuel`  | 部门油耗     |
+| `vehicle_fuel`     | `vehicleFuel`     | 单车油耗     |
 
 ## API
 
