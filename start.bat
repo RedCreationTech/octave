@@ -6,12 +6,31 @@ cd /d "%~dp0"
 set JAVA_CMD=runtime\bin\java.exe
 set JAR=target\ocvate.jar
 
+:: ── 判断模式 ──
+set CONFIG=config-sqlite.edn
+set MODE=SQLite
+if /i "%1"=="oracle" (
+    set CONFIG=config.edn
+    set MODE=Oracle
+)
+
 echo ╔══════════════════════════════════════════╗
-echo ║   企业资产图表分析 — 一键启动           ║
+echo ║   企业资产图表分析 — %MODE% 模式启动      ║
 echo ╚══════════════════════════════════════════╝
 echo.
 
-:: ── 1. 检查 JAR，不存在则构建 ──
+:: ── 检查配置文件 ──
+if not exist "%CONFIG%" (
+    echo [错误] 未找到 %CONFIG%
+    if "%MODE%"=="Oracle" (
+        echo 请将 config-sqlite.edn 复制为 config.edn
+        echo 并修改数据库连接信息
+    )
+    pause
+    exit /b 1
+)
+
+:: ── 1. 检查 JAR ──
 if not exist "%JAR%" (
     echo [1/3] 构建 uber JAR...
     where clojure >nul 2>&1
@@ -31,7 +50,7 @@ if not exist "%JAR%" (
     echo [1/3] JAR 已就绪
 )
 
-:: ── 2. 检查 Java 运行时，不存在则下载 ──
+:: ── 2. 检查 Java 运行时 ──
 if not exist "%JAVA_CMD%" (
     echo [2/3] 下载 Java 运行时 (JDK 21 for Windows)...
     if not exist "runtime" mkdir runtime
@@ -62,10 +81,11 @@ if not exist "%JAVA_CMD%" (
 :: ── 3. 启动 ──
 if not exist "data" mkdir data
 echo [3/3] 启动服务...
-echo.
+echo   模式: %MODE%
+echo   配置: %CONFIG%
 echo   地址: http://127.0.0.1:8080
 echo   停止: 关闭此窗口或 Ctrl+C
 echo.
 
-"%JAVA_CMD%" -Dconf=config-sqlite.edn -cp %JAR% clojure.main -m ocvate.core
+"%JAVA_CMD%" -Dconf=%CONFIG% -cp %JAR% clojure.main -m ocvate.core
 pause
