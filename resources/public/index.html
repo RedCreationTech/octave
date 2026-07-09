@@ -2419,7 +2419,7 @@ function chartValueLabel(overrides = {}) {
   };
 }
 
-function init() {
+async function init() {
   if (!window.echarts) {
     const status = $("#importStatus span:last-child");
     if (status) status.textContent = "ECharts 未加载，请确认网络或本地依赖。";
@@ -2429,6 +2429,21 @@ function init() {
   renderModuleImportMenus();
   resetFiltersFromData();
   renderActivePage();
+
+  // 尝试从后端 API 加载数据，覆盖硬编码默认值
+  try {
+    const resp = await fetch("/api/all");
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const result = await resp.json();
+    if (result.ok && result.data) {
+      state.data = result.data;
+      resetFiltersFromData();
+      renderActivePage();
+      setTimeout(resizeCharts, 80);
+    }
+  } catch (_) {
+    // 后端不可用时静默回退到硬编码数据
+  }
 }
 
 function bindGlobalEvents() {

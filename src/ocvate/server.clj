@@ -8,7 +8,35 @@
             [ring.middleware.not-modified :refer [wrap-not-modified]]
             [ring.util.response :as resp]
             [cheshire.core :as json]
+            [cheshire.generate :as json-gen]
             [ring.adapter.jetty :as jetty]))
+
+;; ──────────────────────────────────────────────────────────────────────
+;; Key 转换: SQLite 返回小写下划线 key → 前端 camelCase
+;; ──────────────────────────────────────────────────────────────────────
+
+(defn- snake->camel
+  "将 snake_case 关键字转为 camelCase 字符串。用来处理 SQLite 返回的列名。"
+  [s]
+  (if (keyword? s)
+    (let [n (name s)]
+      (->> (clojure.string/split n #"_")
+           (map-indexed (fn [i part] (if (zero? i) part (clojure.string/capitalize part))))
+           (clojure.string/join)))
+    (name s)))
+
+(defn- transform-map
+  "递归转换 map 的 key 为 camelCase。"
+  [m]
+  (into {} (map (fn [[k v]]
+                  [(snake->camel k)
+                   (if (map? v) (transform-map v) v)])
+                m)))
+
+(defn- transform-rows
+  "转换查询结果行。"
+  [rows]
+  (mapv transform-map rows))
 
 ;; ──────────────────────────────────────────────────────────────────────
 ;; API 处理器
@@ -39,50 +67,58 @@
 ;; ─── 资产相关 ───
 
 (defn api-assets-by-type [_]
-  (try (ok (db/get-assets-by-type))
+  (try (ok (transform-rows (db/get-assets-by-type)))
        (catch Exception e (err (.getMessage e)))))
 
 (defn api-assets-by-dept [_]
-  (try (ok (db/get-assets-by-dept))
+  (try (ok (transform-rows (db/get-assets-by-dept)))
        (catch Exception e (err (.getMessage e)))))
 
 (defn api-depreciation [_]
-  (try (ok (db/get-depreciation-summary))
+  (try (ok (transform-rows (db/get-depreciation-summary)))
        (catch Exception e (err (.getMessage e)))))
 
 (defn api-annual-dynamics [_]
-  (try (ok (db/get-annual-dynamics))
+  (try (ok (transform-rows (db/get-annual-dynamics)))
        (catch Exception e (err (.getMessage e)))))
 
 ;; ─── 出库 ───
 
 (defn api-outbound-summary [_]
-  (try (ok (db/get-outbound-summary))
+  (try (ok (transform-rows (db/get-outbound-summary)))
        (catch Exception e (err (.getMessage e)))))
 
 (defn api-outbound-details [_]
-  (try (ok (db/get-outbound-details))
+  (try (ok (transform-rows (db/get-outbound-details)))
        (catch Exception e (err (.getMessage e)))))
 
 ;; ─── 维修 ───
 
 (defn api-repairs [_]
-  (try (ok (db/get-repairs))
+  (try (ok (transform-rows (db/get-repairs)))
        (catch Exception e (err (.getMessage e)))))
 
 ;; ─── 油耗 ───
 
 (defn api-monthly-fuel [_]
-  (try (ok (db/get-monthly-fuel))
+  (try (ok (transform-rows (db/get-monthly-fuel)))
        (catch Exception e (err (.getMessage e)))))
 
 (defn api-department-fuel [_]
-  (try (ok (db/get-department-fuel))
+  (try (ok (transform-rows (db/get-department-fuel)))
        (catch Exception e (err (.getMessage e)))))
 
 (defn api-vehicle-fuel [_]
-  (try (ok (db/get-vehicle-fuel))
+  (try (ok (transform-rows (db/get-vehicle-fuel)))
        (catch Exception e (err (.getMessage e)))))
+
+;; ─── 聚合 API：一次返回前端所需全部数据 ───
+
+(defn api-all [_]
+  (try
+    (let [raw (db/get-all-data)]
+      (ok (reduce-kv (fn [m k v] (assoc m (name k) (transform-rows v))) {} raw)))
+    (catch Exception e (err (.getMessage e)))))
 
 ;; ─── 出库明细（支持按仓库字段过滤）───
 
@@ -127,6 +163,10 @@
   (GET "/api/fuel/monthly"              [] api-monthly-fuel)
   (GET "/api/fuel/department"           [] api-department-fuel)
   (GET "/api/fuel/vehicle"              [] api-vehicle-fuel)
+
+  ;; 静态资源
+  ;; 聚合 API（必须放在静态资源之前，避免被兜底路由捕获）
+  (GET "/api/all" [] api-all)
 
   ;; 静态资源
   (route/resources "/" {:root "public"})
