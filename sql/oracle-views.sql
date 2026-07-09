@@ -94,9 +94,9 @@ SELECT
 FROM your_outbound_details_table;  -- ← 替换为实际表名
 
 -- ============================================================
--- 7. 维修明细（前端: repairs）
+-- 7. 单台设备维修费用分析（前端: repairs / repairsSingleDevice）
 -- ============================================================
-CREATE OR REPLACE VIEW repairs AS
+CREATE OR REPLACE VIEW repairs_single_device AS
 SELECT
   year                    AS year,
   month                   AS month,
@@ -106,10 +106,23 @@ SELECT
   equipment_name          AS equipment_name,
   plate_no                AS plate_no,
   total_cost              AS total_cost
-FROM your_repairs_table;  -- ← 替换为实际表名
+FROM your_repairs_single_device_table;  -- ← 替换为实际表名
 
 -- ============================================================
--- 8. 月度油耗（前端: monthlyFuel）
+-- 8. 部门设备维修费用分析（前端: repairsDepartment）
+-- ============================================================
+CREATE OR REPLACE VIEW repairs_department AS
+SELECT
+  year                    AS year,
+  month                   AS month,
+  department_code         AS department_code,
+  department              AS department,
+  total_cost              AS total_cost,
+  repair_count            AS repair_count
+FROM your_repairs_department_table;  -- ← 替换为实际表名
+
+-- ============================================================
+-- 9. 月度油耗（前端: monthlyFuel）
 -- ============================================================
 CREATE OR REPLACE VIEW monthly_fuel AS
 SELECT

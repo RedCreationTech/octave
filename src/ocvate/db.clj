@@ -56,8 +56,12 @@
   (query "SELECT * FROM outbound_summary ORDER BY year, warehouse_code")))
 (defn get-outbound-details ([] (get-outbound-details {})) ([_]
   (query "SELECT * FROM outbound_details ORDER BY time DESC")))
+(defn get-repairs-single-device ([] (get-repairs-single-device {})) ([_]
+  (query "SELECT * FROM repairs_single_device ORDER BY year, month")))
+(defn get-repairs-department ([] (get-repairs-department {})) ([_]
+  (query "SELECT * FROM repairs_department ORDER BY year, month")))
 (defn get-repairs ([] (get-repairs {})) ([_]
-  (query "SELECT * FROM repairs ORDER BY year, month")))
+  (query "SELECT * FROM repairs_single_device ORDER BY year, month")))
 (defn get-monthly-fuel ([] (get-monthly-fuel {})) ([_]
   (query "SELECT * FROM monthly_fuel ORDER BY year, month")))
 (defn get-department-fuel ([] (get-department-fuel {})) ([_]
@@ -69,7 +73,7 @@
   {:departments (get-assets-by-dept) :assetTypes (get-assets-by-type)
    :depreciation (get-depreciation-summary) :annualDynamics (get-annual-dynamics)
    :outboundSummary (get-outbound-summary) :outboundDetails (get-outbound-details)
-   :repairs (get-repairs) :monthlyFuel (get-monthly-fuel)
+   :repairs (get-repairs) :repairsSingleDevice (get-repairs-single-device) :repairsDepartment (get-repairs-department) :monthlyFuel (get-monthly-fuel)
    :departmentFuel (get-department-fuel) :vehicleFuel (get-vehicle-fuel)})
 
 ;; ── SQLite 初始化（匹配前端 createDefaultData 的机场场景数据）──
@@ -80,7 +84,8 @@
    "CREATE TABLE IF NOT EXISTS annual_dynamics (year INTEGER,added_count INTEGER,added_value REAL,pending_count INTEGER,pending_value REAL)"
    "CREATE TABLE IF NOT EXISTS outbound_summary (year INTEGER,warehouse_code TEXT,warehouse_name TEXT,department_code TEXT,department TEXT,amount REAL,quantity INTEGER,yoy REAL,mom REAL)"
    "CREATE TABLE IF NOT EXISTS outbound_details (warehouse_code TEXT,warehouse_name TEXT,department_code TEXT,department TEXT,ticket_no TEXT,spare_code TEXT,spare_name TEXT,quantity INTEGER,unit TEXT,class01 TEXT,class02 TEXT,class03 TEXT,unit_price REAL,total_price REAL,time TEXT)"
-   "CREATE TABLE IF NOT EXISTS repairs (year INTEGER,month INTEGER,department_code TEXT,department TEXT,asset_code TEXT,equipment_name TEXT,plate_no TEXT,total_cost REAL)"
+   "CREATE TABLE IF NOT EXISTS repairs_single_device (year INTEGER,month INTEGER,department_code TEXT,department TEXT,asset_code TEXT,equipment_name TEXT,plate_no TEXT,total_cost REAL)"
+   "CREATE TABLE IF NOT EXISTS repairs_department (year INTEGER,month INTEGER,department_code TEXT,department TEXT,total_cost REAL,repair_count INTEGER)"
    "CREATE TABLE IF NOT EXISTS monthly_fuel (year INTEGER,month INTEGER,fuel_volume REAL)"
    "CREATE TABLE IF NOT EXISTS department_fuel (year INTEGER,month INTEGER,department TEXT,fuel_type TEXT,fuel_volume REAL,total_ratio REAL,energy_type TEXT,energy_method TEXT,energy REAL,mom REAL,yoy REAL)"
    "CREATE TABLE IF NOT EXISTS vehicle_fuel (year INTEGER,month INTEGER,asset_code TEXT,equipment_name TEXT,plate_no TEXT,fuel_volume REAL)"])
@@ -162,8 +167,9 @@
         "('01','综合物资库','D001','飞行区管理部','LL-2025-61','BJ-6108','过滤器',10,'件','维修备件','常用备件','综合',1.15,11.5,'2025-03-61'),"
         "('01','综合物资库','D001','飞行区管理部','LL-2025-62','BJ-6208','传感器',11,'件','维修备件','常用备件','综合',1.5,16.5,'2025-04-62'),"
         "('01','综合物资库','D001','飞行区管理部','LL-2025-63','BJ-6308','照明组件',12,'件','维修备件','常用备件','综合',1.85,22.2,'2025-05-63')")
-   (str "DELETE FROM repairs")
-   (str "INSERT INTO repairs VALUES "
+   (str "DELETE FROM repairs_single_device")
+   (str "DELETE FROM repairs_department")
+   (str "INSERT INTO repairs_single_device VALUES "
         "(2026,1,'D003','航站区管理部','DEV-1001','大型行李安检机','',5000),"
         "(2026,2,'D003','航站区管理部','DEV-1001','大型行李安检机','',5000),"
         "(2026,3,'D003','航站区管理部','DEV-1001','大型行李安检机','',5400),"
@@ -188,6 +194,20 @@
         "(2026,4,'D001','飞行区管理部','DEV-4491','跑道巡检车','鲁U-8890',7200),"
         "(2026,5,'D001','飞行区管理部','DEV-4491','跑道巡检车','鲁U-8890',7600),"
         "(2026,6,'D001','飞行区管理部','DEV-4491','跑道巡检车','鲁U-8890',7900)")
+   (str "DELETE FROM repairs_department")
+   (str "INSERT INTO repairs_department VALUES "
+        "(2026,1,'D003','航站区管理部',5000,1),(2026,2,'D003','航站区管理部',5000,1),"
+        "(2026,3,'D003','航站区管理部',5400,1),(2026,4,'D003','航站区管理部',6120,1),"
+        "(2026,5,'D003','航站区管理部',6850,1),(2026,6,'D003','航站区管理部',5980,1),"
+        "(2026,1,'D006','公共交通管理部',8500,1),(2026,2,'D006','公共交通管理部',8600,1),"
+        "(2026,3,'D006','公共交通管理部',8950,1),(2026,4,'D006','公共交通管理部',9800,1),"
+        "(2026,5,'D006','公共交通管理部',10800,1),(2026,6,'D006','公共交通管理部',10200,1),"
+        "(2026,1,'D002','动力能源部',14900,1),(2026,2,'D002','动力能源部',14100,1),"
+        "(2026,3,'D002','动力能源部',15800,1),(2026,4,'D002','动力能源部',16780,1),"
+        "(2026,5,'D002','动力能源部',17950,1),(2026,6,'D002','动力能源部',17250,1),"
+        "(2026,1,'D001','飞行区管理部',6100,1),(2026,2,'D001','飞行区管理部',6400,1),"
+        "(2026,3,'D001','飞行区管理部',6900,1),(2026,4,'D001','飞行区管理部',7200,1),"
+        "(2026,5,'D001','飞行区管理部',7600,1),(2026,6,'D001','飞行区管理部',7900,1)")
    (str "DELETE FROM monthly_fuel")
    (str "INSERT INTO monthly_fuel VALUES "
         "(2026,1,16200),(2026,2,15800),(2026,3,17100),(2026,4,16800),"

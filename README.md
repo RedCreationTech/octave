@@ -101,18 +101,18 @@ DBA 需要根据实际情况修改每个视图的 `FROM` 子句，将 `your_xxx_
 
 **10 个视图列表：**
 
-| 视图名 | 前端字段 | 说明 |
-|--------|----------|------|
-| `dept_rank` | `departments` | 部门资产统计 |
-| `asset_type` | `assetTypes` | 资产类型统计 |
-| `depreciation` | `depreciation` | 折旧到期统计 |
-| `annual_dynamics` | `annualDynamics` | 年度资产动态 |
-| `outbound_summary` | `outboundSummary` | 出库汇总 |
-| `outbound_details` | `outboundDetails` | 出库明细 |
-| `repairs` | `repairs` | 维修明细 |
-| `monthly_fuel` | `monthlyFuel` | 月度油耗 |
-| `department_fuel` | `departmentFuel` | 部门油耗 |
-| `vehicle_fuel` | `vehicleFuel` | 单车油耗 |
+| 视图名             | 前端字段          | 说明         |
+|--------------------|-------------------|--------------|
+| `dept_rank`        | `departments`     | 部门资产统计 |
+| `asset_type`       | `assetTypes`      | 资产类型统计 |
+| `depreciation`     | `depreciation`    | 折旧到期统计 |
+| `annual_dynamics`  | `annualDynamics`  | 年度资产动态 |
+| `outbound_summary` | `outboundSummary` | 出库汇总     |
+| `outbound_details` | `outboundDetails` | 出库明细     |
+| `repairs`          | `repairs`         | 维修明细     |
+| `monthly_fuel`     | `monthlyFuel`     | 月度油耗     |
+| `department_fuel`  | `departmentFuel`  | 部门油耗     |
+| `vehicle_fuel`     | `vehicleFuel`     | 单车油耗     |
 
 每个视图的字段名和类型详见 `sql\oracle-views.sql`。
 
@@ -175,12 +175,12 @@ openjdk version "21.0.11" 2026-04-21 LTS
 
 启动后访问：
 
-| 地址 | 说明 |
-|------|------|
-| http://127.0.0.1:8080 | 前端页面 |
-| http://127.0.0.1:8080/api/health | 健康检查（含数据库连通性） |
-| http://127.0.0.1:8080/api/assets/by-type | 资产类型统计 |
-| http://127.0.0.1:8080/api/all | 全部数据（前端自动调用） |
+| 地址                                     | 说明                       |
+|------------------------------------------|----------------------------|
+| http://127.0.0.1:8080                    | 前端页面                   |
+| http://127.0.0.1:8080/api/health         | 健康检查（含数据库连通性） |
+| http://127.0.0.1:8080/api/assets/by-type | 资产类型统计               |
+| http://127.0.0.1:8080/api/all            | 全部数据（前端自动调用）   |
 
 ---
 
@@ -202,20 +202,20 @@ start.bat
 
 ## API 清单
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/health` | 健康检查 |
-| GET | `/api/all` | 获取全部 10 个数据集（前端唯一调用） |
-| GET | `/api/assets/by-type` | 资产类型统计 |
-| GET | `/api/assets/by-dept` | 部门排名 |
-| GET | `/api/depreciation` | 折旧到期统计 |
-| GET | `/api/annual-dynamics` | 年度资产动态 |
-| GET | `/api/outbound/summary` | 出库汇总 |
-| GET | `/api/outbound/details` | 出库明细 |
-| GET | `/api/repairs` | 维修明细 |
-| GET | `/api/fuel/monthly` | 月度油耗 |
-| GET | `/api/fuel/department` | 部门油耗 |
-| GET | `/api/fuel/vehicle` | 单车油耗 |
+| 方法 | 路径                    | 说明                                 |
+|------|-------------------------|--------------------------------------|
+| GET  | `/api/health`           | 健康检查                             |
+| GET  | `/api/all`              | 获取全部 10 个数据集（前端唯一调用） |
+| GET  | `/api/assets/by-type`   | 资产类型统计                         |
+| GET  | `/api/assets/by-dept`   | 部门排名                             |
+| GET  | `/api/depreciation`     | 折旧到期统计                         |
+| GET  | `/api/annual-dynamics`  | 年度资产动态                         |
+| GET  | `/api/outbound/summary` | 出库汇总                             |
+| GET  | `/api/outbound/details` | 出库明细                             |
+| GET  | `/api/repairs`          | 维修明细                             |
+| GET  | `/api/fuel/monthly`     | 月度油耗                             |
+| GET  | `/api/fuel/department`  | 部门油耗                             |
+| GET  | `/api/fuel/vehicle`     | 单车油耗                             |
 
 所有 API 返回 `{"ok": true, "data": [...]}` 格式，key 为 camelCase。
 
@@ -223,17 +223,17 @@ start.bat
 
 ## 常见问题
 
-**Q: 启动时提示找不到 config.edn？**  
+**Q: 启动时提示找不到 config.edn？**
 A: 确保 `config.edn` 在项目根目录，并填入了正确的数据库连接信息。
 
-**Q: Oracle 连接失败？**  
+**Q: Oracle 连接失败？**
 A: 检查网络连通性、用户名密码、Oracle 监听状态。验证 SQL\*Plus 能正常连接。
 
-**Q: 前端页面打开后图表都是空的？**  
+**Q: 前端页面打开后图表都是空的？**
 A: 前端加载时会调用 `/api/all`。检查浏览器 DevTools → Network 标签，确认请求是否有返回数据。
 
-**Q: 404 Page not found？**  
+**Q: 404 Page not found？**
 A: `index.html` 未正确打包。重新构建 JAR：`deploy\build.bat`。
 
-**Q: runtime/lib/modules 太大能否剔除？**  
+**Q: runtime/lib/modules 太大能否剔除？**
 A: 可以用 `jlink` 裁剪不需要的模块，但非必须。完整的 JDK 约 330MB，已包含所有 Java 标准库。

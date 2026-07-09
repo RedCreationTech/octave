@@ -98,6 +98,14 @@
   (try (ok (transform-rows (db/get-repairs)))
        (catch Exception e (err (.getMessage e)))))
 
+(defn api-repairs-single-device [_]
+  (try (ok (transform-rows (db/get-repairs-single-device)))
+       (catch Exception e (err (.getMessage e)))))
+
+(defn api-repairs-department [_]
+  (try (ok (transform-rows (db/get-repairs-department)))
+       (catch Exception e (err (.getMessage e)))))
+
 ;; ─── 油耗 ───
 
 (defn api-monthly-fuel [_]
@@ -161,6 +169,8 @@
   (GET "/api/outbound/details"          [] api-outbound-details)
   (GET "/api/outbound/details/search"   [warehouse department] api-outbound-details-filtered)
   (GET "/api/repairs"                   [] api-repairs)
+  (GET "/api/repairs/single-device"     [] api-repairs-single-device)
+  (GET "/api/repairs/department"        [] api-repairs-department)
   (GET "/api/fuel/monthly"              [] api-monthly-fuel)
   (GET "/api/fuel/department"           [] api-department-fuel)
   (GET "/api/fuel/vehicle"              [] api-vehicle-fuel)
