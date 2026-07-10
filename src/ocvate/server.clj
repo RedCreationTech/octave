@@ -126,11 +126,56 @@
 
 ;; ─── 聚合 API：一次返回前端所需全部数据 ───
 
+(def ^:private api-key->view
+  "聚合 API 返回 key 到 Oracle 视图名的映射（方便排错）。"
+  {:departments        "dept_rank"
+   :assetTypes         "asset_type"
+   :depreciation       "depreciation"
+   :annualDynamics     "annual_dynamics"
+   :outboundSummary    "outbound_summary"
+   :outboundDetails    "outbound_details"
+   :repairs            "repairs_single_device"
+   :repairsSingleDevice "repairs_single_device"
+   :repairsDepartment  "repairs_department"
+   :monthlyFuel        "monthly_fuel"
+   :departmentFuel     "department_fuel"
+   :departmentEnergy   "department_energy"
+   :vehicleFuel        "vehicle_fuel"})
+
 (defn api-all [_]
   (try
     (println "📡 前端请求 /api/all")
-    (let [raw (db/get-all-data)]
-      (ok (reduce-kv (fn [m k v] (assoc m (name k) (transform-rows v))) {} raw)))
+    (let [queries {:departments        db/get-assets-by-dept
+                  :assetTypes         db/get-assets-by-type
+                  :depreciation       db/get-depreciation-summary
+                  :annualDynamics     db/get-annual-dynamics
+                  :outboundSummary    db/get-outbound-summary
+                  :outboundDetails    db/get-outbound-details
+                  :repairs            db/get-repairs
+                  :repairsSingleDevice db/get-repairs-single-device
+                  :repairsDepartment  db/get-repairs-department
+                  :monthlyFuel        db/get-monthly-fuel
+                  :departmentFuel     db/get-department-fuel
+                  :departmentEnergy   db/get-department-energy
+                  :vehicleFuel        db/get-vehicle-fuel}
+          results (reduce-kv (fn [m k f]
+                               (try
+                                 (assoc m k (transform-rows (f)))
+                                 (catch Exception e
+                                   (assoc m k {:_view-error (str k) :_error (.getMessage e)}))))
+                             {} queries)
+          errors  (into {} (filter (fn [[_ v]] (:_error v)) results))]
+      (if (seq errors)
+        (json-response {:ok false
+                        :error "部分视图查询失败"
+                        :errors (reduce-kv (fn [m k v]
+                                             (assoc m k
+                                                    {:view (api-key->view k k)
+                                                     :message (:_error v)}))
+                                           {}
+                                           errors)
+                        :data (into {} (remove (fn [[_ v]] (:_error v)) results))})
+        (ok results)))
     (catch Exception e (err (.getMessage e)))))
 
 ;; ─── 出库明细（支持按仓库字段过滤）───
