@@ -28,6 +28,22 @@
   :idle-timeout-ms 600000       ;; 空闲连接超时(毫秒)
   :max-lifetime-ms 1800000}     ;; 连接最大存活时间(毫秒)
 
+ ;; ── 视图名称配置（仅 Oracle 生效，SQLite 固定使用默认表名）─────
+ ;; 如果你的 Oracle 视图名和下面默认值不一样，请在这里修改。
+ :views {:departments        "dept_rank"
+         :assetTypes         "asset_type"
+         :depreciation       "depreciation"
+         :annualDynamics     "annual_dynamics"
+         :outboundSummary    "outbound_summary"
+         :outboundDetails    "outbound_details"
+         :repairs            "repairs_single_device"
+         :repairsSingleDevice "repairs_single_device"
+         :repairsDepartment  "repairs_department"
+         :monthlyFuel        "monthly_fuel"
+         :departmentFuel     "department_fuel"
+         :departmentEnergy   "department_energy"
+         :vehicleFuel        "vehicle_fuel"}
+
  :server
  {:port 8080                    ;; Web 服务器监听端口
   :static-root "public"}        ;; 静态资源根目录(相对于 resources/)

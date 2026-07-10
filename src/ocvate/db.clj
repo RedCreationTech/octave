@@ -43,33 +43,35 @@
 (defn execute! [s & p]
   (with-conn* (fn [db] (apply jdbc/execute! db (if (sequential? (first p)) (concat [s] p) (conj p s))))))
 
+(defn- view [k] (cfg/view-name (db-type) k))
+
 ;; ── 具名查询 ──
 (defn get-assets-by-type ([] (get-assets-by-type {})) ([_]
-  (query "SELECT * FROM asset_type ORDER BY asset_count DESC")))
+  (query (str "SELECT * FROM " (view :assetTypes) " ORDER BY asset_count DESC"))))
 (defn get-assets-by-dept ([] (get-assets-by-dept {})) ([_]
-  (query "SELECT * FROM dept_rank ORDER BY asset_count DESC")))
+  (query (str "SELECT * FROM " (view :departments) " ORDER BY asset_count DESC"))))
 (defn get-depreciation-summary ([] (get-depreciation-summary {})) ([_]
-  (query "SELECT * FROM depreciation ORDER BY year")))
+  (query (str "SELECT * FROM " (view :depreciation) " ORDER BY year"))))
 (defn get-annual-dynamics ([] (get-annual-dynamics {})) ([_]
-  (query "SELECT * FROM annual_dynamics ORDER BY year")))
+  (query (str "SELECT * FROM " (view :annualDynamics) " ORDER BY year"))))
 (defn get-outbound-summary ([] (get-outbound-summary {})) ([_]
-  (query "SELECT * FROM outbound_summary ORDER BY year, warehouse_code")))
+  (query (str "SELECT * FROM " (view :outboundSummary) " ORDER BY year, warehouse_code"))))
 (defn get-outbound-details ([] (get-outbound-details {})) ([_]
-  (query "SELECT * FROM outbound_details ORDER BY time DESC")))
+  (query (str "SELECT * FROM " (view :outboundDetails) " ORDER BY time DESC"))))
 (defn get-repairs-single-device ([] (get-repairs-single-device {})) ([_]
-  (query "SELECT * FROM repairs_single_device ORDER BY year, month")))
+  (query (str "SELECT * FROM " (view :repairsSingleDevice) " ORDER BY year, month"))))
 (defn get-repairs-department ([] (get-repairs-department {})) ([_]
-  (query "SELECT * FROM repairs_department ORDER BY year, month")))
+  (query (str "SELECT * FROM " (view :repairsDepartment) " ORDER BY year, month"))))
 (defn get-repairs ([] (get-repairs {})) ([_]
-  (query "SELECT * FROM repairs_single_device ORDER BY year, month")))
+  (query (str "SELECT * FROM " (view :repairs) " ORDER BY year, month"))))
 (defn get-monthly-fuel ([] (get-monthly-fuel {})) ([_]
-  (query "SELECT * FROM monthly_fuel ORDER BY year, month")))
+  (query (str "SELECT * FROM " (view :monthlyFuel) " ORDER BY year, month"))))
 (defn get-department-fuel ([] (get-department-fuel {})) ([_]
-  (query "SELECT * FROM department_fuel ORDER BY year, month")))
+  (query (str "SELECT * FROM " (view :departmentFuel) " ORDER BY year, month"))))
 (defn get-department-energy ([] (get-department-energy {})) ([_]
-  (query "SELECT * FROM department_energy ORDER BY year, month")))
+  (query (str "SELECT * FROM " (view :departmentEnergy) " ORDER BY year, month"))))
 (defn get-vehicle-fuel ([] (get-vehicle-fuel {})) ([_]
-  (query "SELECT * FROM vehicle_fuel ORDER BY year, month")))
+  (query (str "SELECT * FROM " (view :vehicleFuel) " ORDER BY year, month"))))
 
 (defn get-all-data []
   {:departments (get-assets-by-dept) :assetTypes (get-assets-by-type)

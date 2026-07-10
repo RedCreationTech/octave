@@ -127,20 +127,8 @@
 ;; ─── 聚合 API：一次返回前端所需全部数据 ───
 
 (def ^:private api-key->view
-  "聚合 API 返回 key 到 Oracle 视图名的映射（方便排错）。"
-  {:departments        "dept_rank"
-   :assetTypes         "asset_type"
-   :depreciation       "depreciation"
-   :annualDynamics     "annual_dynamics"
-   :outboundSummary    "outbound_summary"
-   :outboundDetails    "outbound_details"
-   :repairs            "repairs_single_device"
-   :repairsSingleDevice "repairs_single_device"
-   :repairsDepartment  "repairs_department"
-   :monthlyFuel        "monthly_fuel"
-   :departmentFuel     "department_fuel"
-   :departmentEnergy   "department_energy"
-   :vehicleFuel        "vehicle_fuel"})
+  "聚合 API 返回 key 到实际视图名的映射（从配置读取，Oracle 可覆盖）。"
+  (into {} (map (fn [k] [k (cfg/view-name :oracle k)])) (keys (cfg/default-view-names))))
 
 (defn api-all [_]
   (try
