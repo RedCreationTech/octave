@@ -18,7 +18,10 @@
    :monthlyFuel        "monthly_fuel"
    :departmentFuel     "department_fuel"
    :departmentEnergy   "department_energy"
-   :vehicleFuel        "vehicle_fuel"})
+   :vehicleFuel        "vehicle_fuel"
+   :assetDisposal      "u5_fu_zpczsqdmx01"
+   :assetInventory     "u5_fu_zppdqd01"
+   :assetTransfer      "u5_fu_zpzyqdmx01"})
 
 (defonce ^:dynamic *config*
   (delay

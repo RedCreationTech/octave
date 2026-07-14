@@ -378,6 +378,35 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .asset-kpi-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 86px;
+      padding-top: 12px;
+      padding-bottom: 12px;
+    }
+
+    #assetKpis {
+      grid-template-columns: 1.05fr 1.27fr 0.58fr;
+    }
+
+    .asset-kpi-card .kpi-label,
+    .asset-kpi-card .kpi-value {
+      display: inline;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .asset-kpi-card .kpi-label {
+      font-size: 16px;
+      color: #dbeafe;
+    }
+
+    .asset-kpi-card .kpi-value {
+      font-size: 19px;
+    }
+
     .panel-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -510,6 +539,51 @@
     .select-control:focus {
       border-color: var(--blue);
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
+    }
+
+    .panel-hint {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .asset-export-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .asset-export-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid rgba(144, 205, 244, 0.12);
+      border-radius: 8px;
+      background: rgba(15, 29, 50, 0.48);
+    }
+
+    .asset-export-item strong {
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .asset-export-item .field {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    .asset-export-item .field input,
+    .asset-export-item .field select {
+      flex: 1;
+      min-width: 0;
+    }
+
+    @media (max-width: 900px) {
+      .asset-export-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     .chart {
@@ -943,6 +1017,10 @@
       .kpi-row {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
+
+      #assetKpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
     @media (max-width: 680px) {
@@ -968,6 +1046,10 @@
       }
 
       .kpi-row {
+        grid-template-columns: 1fr;
+      }
+
+      #assetKpis {
         grid-template-columns: 1fr;
       }
 
@@ -1206,6 +1288,31 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         </div>
       </article>
 
+      <article class="panel asset-detail-exports">
+        <div class="panel-title">
+          <h3>资产业务明细下载</h3>
+          <span class="panel-hint">输入条件后下载本地 CSV 文件</span>
+        </div>
+        <div class="asset-export-grid">
+          <div class="asset-export-item">
+            <strong>资产处置申请单明细</strong>
+            <label class="field">使用部门 <select id="assetDisposalDepartment"></select></label>
+            <button class="primary-btn" id="downloadAssetDisposalBtn">下载 CSV</button>
+          </div>
+          <div class="asset-export-item">
+            <strong>资产盘点单明细</strong>
+            <label class="field">年份 <select id="assetInventoryYear"></select></label>
+            <button class="primary-btn" id="downloadAssetInventoryBtn">下载 CSV</button>
+          </div>
+          <div class="asset-export-item">
+            <strong>资产转移单明细查询</strong>
+            <label class="field">单据号 <input id="assetTransferDocumentNo" type="text" placeholder="请输入单据号"></label>
+            <label class="field">调出部门 <select id="assetTransferFromDepartment"></select></label>
+            <button class="primary-btn" id="downloadAssetTransferBtn">下载 CSV</button>
+          </div>
+        </div>
+      </article>
+
     </section>
 
     <section class="page" id="page-outbound">
@@ -1251,8 +1358,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           <h3>单台设备维修维护费用分析</h3>
           <div class="filters">
             <label class="field">年份 <select id="repairYear"></select></label>
-            <label class="field">设备 <input id="repairDeviceSearch" list="repairDeviceList" placeholder="搜索设备"></label>
-            <datalist id="repairDeviceList"></datalist>
+            <label class="field">设备 <select id="repairDevice"></select></label>
             <button class="ghost-btn" data-chart-export="singleRepair">导出图</button>
             <button class="ghost-btn" data-table-export="singleRepair">导出表</button>
           </div>
@@ -2219,6 +2325,8 @@ function createDefaultData() {
     repairs,
     monthlyFuel,
     departmentFuel,
+    // 默认数据没有独立能耗明细时，先使用部门油耗数据兜底，避免油耗页后续组件停止渲染。
+    departmentEnergy: departmentFuel,
     vehicleFuel
   };
 }
@@ -2323,6 +2431,7 @@ const colors = {
 const state = {
   data: createDefaultData(),
   activePage: "assets",
+  allowedPages: new Set([1, 2, 3, 4]),
   importResult: { ok: true, message: "", errors: [] },
   detailRows: [],
   detailTitle: "",
@@ -2346,6 +2455,15 @@ const state = {
 
 const charts = new Map();
 const tableCache = new Map();
+
+// 页面编号用于试用“按页面授权”：
+// 1=资产，2=出库，3=维修，4=油耗。
+const PAGE_ACCESS_CONFIG = [
+  { number: 1, key: "assets" },
+  { number: 2, key: "outbound" },
+  { number: 3, key: "repairs" },
+  { number: 4, key: "fuel" }
+];
 
 const baseChartOption = {
   backgroundColor: "transparent",
@@ -2425,6 +2543,7 @@ async function init() {
     if (status) status.textContent = "ECharts 未加载，请确认网络或本地依赖。";
     return;
   }
+  applyPageAccessFromUrl();
   bindGlobalEvents();
   renderModuleImportMenus();
   resetFiltersFromData();
@@ -2446,12 +2565,52 @@ async function init() {
   }
 }
 
+function applyPageAccessFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const rawPages = params.get("pages") ?? params.get("page");
+
+  // 不传 pages 时保持原来的组合页面；传 pages=1,2 时只显示指定页面。
+  if (rawPages == null || rawPages.trim() === "") return;
+
+  const requestedPages = rawPages
+    .split(",")
+    .map((value) => Number(value.trim()))
+    .filter((value) => Number.isInteger(value) && value >= 1 && value <= PAGE_ACCESS_CONFIG.length);
+
+  if (requestedPages.length === 0) return;
+
+  state.allowedPages = new Set(requestedPages);
+  const firstAllowedPage = PAGE_ACCESS_CONFIG.find((page) => state.allowedPages.has(page.number));
+  state.activePage = firstAllowedPage?.key ?? "assets";
+
+  PAGE_ACCESS_CONFIG.forEach(({ number, key }) => {
+    const tab = document.querySelector(`.nav-tab[data-page="${key}"]`);
+    const page = document.querySelector(`#page-${key}`);
+    const visible = state.allowedPages.has(number);
+    if (tab) {
+      tab.hidden = !visible;
+      tab.setAttribute("aria-hidden", String(!visible));
+      tab.classList.toggle("active", visible && key === state.activePage);
+    }
+    if (page) {
+      page.classList.toggle("active", visible && key === state.activePage);
+      page.hidden = !visible;
+    }
+  });
+}
+
 function bindGlobalEvents() {
   $$(".nav-tab").forEach((button) => {
     button.addEventListener("click", () => {
+      const pageConfig = PAGE_ACCESS_CONFIG.find((page) => page.key === button.dataset.page);
+      if (!pageConfig || !state.allowedPages.has(pageConfig.number)) return;
       state.activePage = button.dataset.page;
       $$(".nav-tab").forEach((item) => item.classList.toggle("active", item === button));
-      $$(".page").forEach((page) => page.classList.toggle("active", page.id === `page-${state.activePage}`));
+      $$(".page").forEach((page) => {
+        const visible = page.id === `page-${state.activePage}`;
+        page.classList.toggle("active", visible);
+        page.hidden = !state.allowedPages.has(PAGE_ACCESS_CONFIG.find((item) => `page-${item.key}` === page.id)?.number);
+      });
       renderActivePage();
       setTimeout(resizeCharts, 80);
     });
@@ -2472,6 +2631,9 @@ function bindGlobalEvents() {
   $("#exportDepartmentRepairDetailsBtn")?.addEventListener("click", exportDepartmentRepairDetails);
   $("#exportOilReportBtn").addEventListener("click", exportOilReport);
   $("#exportOilNoticeBtn").addEventListener("click", exportOilNotice);
+  $("#downloadAssetDisposalBtn").addEventListener("click", () => downloadAssetDetailCsv("disposal"));
+  $("#downloadAssetInventoryBtn").addEventListener("click", () => downloadAssetDetailCsv("inventory"));
+  $("#downloadAssetTransferBtn").addEventListener("click", () => downloadAssetDetailCsv("transfer"));
 
   document.addEventListener("click", (event) => {
     const downloadTemplateButton = event.target.closest("[data-template-download]");
@@ -2580,6 +2742,7 @@ function renderAssetsPage() {
   renderDepreciation();
   renderAnnualDynamics();
   renderCombinedAnnual();
+  renderAssetDetailExportFilters();
 }
 
 function renderAssetSelectors() {
@@ -2600,14 +2763,29 @@ function renderAssetSelectors() {
   };
 }
 
+function renderAssetDetailExportFilters() {
+  const departments = ["全部", ...new Set(state.data.departments.map((row) => row.department).filter(Boolean))];
+  const departmentOptions = departments.map((department) => [department, department]);
+  setSelectOptions($("#assetDisposalDepartment"), departmentOptions, "全部");
+  setSelectOptions($("#assetTransferFromDepartment"), departmentOptions, "全部");
+  setSelectOptions($("#assetInventoryYear"), getYearOptions(2021).map((year) => [year, `${year}年`]), getCurrentYear());
+}
+
 function renderAssetKpis() {
   const { summary } = buildDepartmentRankRows(state.data.departments);
+  const totalAssetValue = state.data.assetTypes.reduce((sum, row) => sum + (Number(row.value) || 0), 0);
   const kpis = [
-    ["固定资产数量", `${formatNumber(summary.fixedAssetCount)} 项`],
-    ["固定资产原值", `${formatNumber(summary.fixedAssetOriginalValue, 0)} 万元`],
+    ["资产总量", `${formatNumber(summary.totalAssets)} 项（固定资产数量：${formatNumber(summary.fixedAssetCount)} 项）`],
+    ["总价值", `${formatNumber(totalAssetValue, 0)} 万元（固定资产原值：${formatNumber(summary.fixedAssetOriginalValue, 0)} 万元）`],
     ["TOP5占比", formatPercent(summary.top5Ratio)]
   ];
-  renderKpis("#assetKpis", kpis);
+  const target = $("#assetKpis");
+  target.innerHTML = kpis.map(([label, value]) => `
+    <div class="kpi-card asset-kpi-card">
+      <span class="kpi-label">${escapeHtml(label)}：</span>
+      <span class="kpi-value">${escapeHtml(value)}</span>
+    </div>
+  `).join("");
 }
 
 function renderDepartmentRank() {
@@ -2680,7 +2858,7 @@ function renderDepreciation() {
   const rows = buildDepreciationDisplayRows(filtered);
   setChart("depreciation", "chartDepreciation", {
     ...baseChartOption,
-    legend: { data: ["已达折旧期资产数量", "原价值（万元）"], textStyle: { color: "#cbd5e6" } },
+    legend: { data: ["原价值（万元）", "已达折旧期资产数量"], textStyle: { color: "#cbd5e6" } },
     dataZoom: [{ type: "slider", bottom: 8, height: 18, borderColor: "rgba(144,205,244,0.22)", handleStyle: { color: colors.mint } }],
     grid: { top: 52, left: 52, right: 52, bottom: 72, containLabel: true },
     xAxis: { type: "category", data: rows.map((row) => row.year), axisLabel: chartAxisLabel({ rotate: 30 }) },
@@ -2689,8 +2867,8 @@ function renderDepreciation() {
       { type: "value", name: "原价值（万元）", nameTextStyle: { color: colors.muted }, axisLabel: chartAxisLabel(), splitLine: { show: false } }
     ],
     series: [
-      { name: "已达折旧期资产数量", type: "bar", data: rows.map((row) => row.depreciationCount), itemStyle: { color: barGradient("#5a9eff", "#1d4ed8"), borderRadius: [4, 4, 0, 0] }, label: chartValueLabel({ fontSize: 10, formatter: (params) => formatNumber(params.value) }) },
-      { name: "原价值（万元）", type: "line", yAxisIndex: 1, data: rows.map((row) => row.originalValue), smooth: true, symbol: "diamond", lineStyle: { color: colors.amber, width: 3 }, label: chartValueLabel({ color: colors.amber, formatter: (params) => formatNumber(params.value, 0) }) }
+      { name: "原价值（万元）", type: "bar", yAxisIndex: 1, data: rows.map((row) => row.originalValue), itemStyle: { color: barGradient("#ffd166", "#c87916"), borderRadius: [4, 4, 0, 0] }, label: chartValueLabel({ color: colors.amber, fontSize: 10, formatter: (params) => formatNumber(params.value, 0) }) },
+      { name: "已达折旧期资产数量", type: "line", data: rows.map((row) => row.depreciationCount), smooth: true, symbol: "diamond", lineStyle: { color: colors.blue, width: 3 }, itemStyle: { color: colors.blue }, label: chartValueLabel({ fontSize: 10, formatter: (params) => formatNumber(params.value) }) }
     ]
   });
   renderTable("#depreciationTable", ["折旧到期年限", "已达折旧期资产数量", "原价值（万元）"], rows.map((row) => ({
@@ -2743,7 +2921,7 @@ function renderCombinedAnnual() {
   const rows = buildCombinedAnnualDisplayRows(state.data.annualDynamics, state.data.depreciation, state.filters.pendingShift);
   setChart("combinedAnnual", "chartCombinedAnnual", {
     ...baseChartOption,
-    legend: { data: ["待处置数量", "折旧数量", "待处置价值（万元）", "折旧价值（万元）"], textStyle: { color: "#cbd5e6" } },
+    legend: { data: ["待处置价值（万元）", "折旧价值（万元）", "待处置数量", "折旧数量"], textStyle: { color: "#cbd5e6" } },
     dataZoom: [{ type: "slider", bottom: 8, height: 18, borderColor: "rgba(144,205,244,0.22)", handleStyle: { color: colors.mint } }],
     grid: { top: 52, left: 52, right: 52, bottom: 72, containLabel: true },
     xAxis: { type: "category", data: rows.map((row) => row.year), axisLabel: chartAxisLabel({ rotate: 28 }) },
@@ -2752,10 +2930,10 @@ function renderCombinedAnnual() {
       { type: "value", name: "价值（万元）", nameTextStyle: { color: colors.muted }, axisLabel: chartAxisLabel(), splitLine: { show: false } }
     ],
     series: [
-      { name: "待处置数量", type: "bar", data: rows.map((row) => row.pendingCount), itemStyle: { color: barGradient("#ffd166", "#c87916"), borderRadius: [4, 4, 0, 0] } },
-      { name: "折旧数量", type: "bar", data: rows.map((row) => row.depreciationCount), itemStyle: { color: barGradient("#5a9eff", "#1d4ed8"), borderRadius: [4, 4, 0, 0] } },
-      { name: "待处置价值（万元）", type: "line", yAxisIndex: 1, data: rows.map((row) => row.pendingValue), smooth: true, lineStyle: { color: colors.red, width: 3 } },
-      { name: "折旧价值（万元）", type: "line", yAxisIndex: 1, data: rows.map((row) => row.depreciationValue), smooth: true, lineStyle: { color: colors.mint, width: 3 } }
+      { name: "待处置价值（万元）", type: "bar", yAxisIndex: 1, data: rows.map((row) => row.pendingValue), itemStyle: { color: barGradient("#ff8f8f", "#cf3f4f"), borderRadius: [4, 4, 0, 0] } },
+      { name: "折旧价值（万元）", type: "bar", yAxisIndex: 1, data: rows.map((row) => row.depreciationValue), itemStyle: { color: barGradient("#84f0d1", "#169b82"), borderRadius: [4, 4, 0, 0] } },
+      { name: "待处置数量", type: "line", data: rows.map((row) => row.pendingCount), smooth: true, lineStyle: { color: colors.red, width: 3 }, itemStyle: { color: colors.red } },
+      { name: "折旧数量", type: "line", data: rows.map((row) => row.depreciationCount), smooth: true, lineStyle: { color: colors.blue, width: 3 }, itemStyle: { color: colors.blue } }
     ]
   });
   renderTable("#combinedAnnualTable", ["统计年度", "待处置数量（项）", "待处置价值（万元）", "折旧数量（项）", "折旧价值（万元）"], rows.map((row) => ({
@@ -2878,16 +3056,16 @@ function renderRepairSelectors() {
     renderSingleRepair();
   };
   const devices = getRepairDevices(state.data.repairs);
-  const datalist = $("#repairDeviceList");
-  datalist.innerHTML = devices.map((device) => `<option value="${escapeHtml(formatEquipmentLabel(device))}"></option>`).join("");
-  const currentDevice = devices.find((device) => device.assetCode === state.filters.repairDevice) ?? devices[0];
-  $("#repairDeviceSearch").value = currentDevice ? formatEquipmentLabel(currentDevice) : "";
-  $("#repairDeviceSearch").onchange = (event) => {
-    const found = devices.find((device) => formatEquipmentLabel(device) === event.target.value);
-    if (found) {
-      state.filters.repairDevice = found.assetCode;
-      renderSingleRepair();
-    }
+  const currentDevice = devices.find((device) => device.assetCode === state.filters.repairDevice) ?? devices[0] ?? null;
+  state.filters.repairDevice = currentDevice?.assetCode ?? "";
+  setSelectOptions(
+    $("#repairDevice"),
+    devices.map((device) => [device.assetCode, formatEquipmentLabel(device)]),
+    state.filters.repairDevice
+  );
+  $("#repairDevice").onchange = (event) => {
+    state.filters.repairDevice = event.target.value;
+    renderSingleRepair();
   };
 
   setSelectOptions($("#departmentRepairYear"), repairYears.map((year) => [year, `${year}年`]), state.filters.departmentRepairYear);
@@ -3030,8 +3208,7 @@ function renderMonthlyFuel() {
 }
 
 function renderDepartmentFuel() {
-  renderFuelSelectors();
-  const rows = filterDepartmentFuel(state.data.departmentFuel, state.filters.departmentFuelYear, state.filters.departmentFuelMonth);
+  const rows = filterDepartmentFuel(state.data.departmentFuel ?? [], state.filters.departmentFuelYear, state.filters.departmentFuelMonth);
   const departments = [...new Set(rows.map((row) => row.department))];
   const fuelTypes = [...new Set(rows.map((row) => row.fuelType))];
   const periodText = `${state.filters.departmentFuelYear}年${state.filters.departmentFuelMonth}月`;
@@ -3080,7 +3257,7 @@ function renderDepartmentFuel() {
     fuelVolume: formatNumber(row.fuelVolume, 1),
     totalRatio: formatPercent(row.totalRatio, 2)
   })));
-  const energyRows = filterDepartmentFuel(state.data.departmentEnergy, state.filters.departmentFuelYear, state.filters.departmentFuelMonth);
+  const energyRows = filterDepartmentFuel(state.data.departmentEnergy ?? [], state.filters.departmentFuelYear, state.filters.departmentFuelMonth);
   renderTable("#departmentEnergyTable", ["部门", "加油量（升）", "能源类型", "能耗计算方式", "能耗", "环比", "同比"], energyRows.map((row) => ({
     department: row.department,
     fuelVolume: formatNumber(row.fuelVolume, 1),
@@ -3100,7 +3277,7 @@ function renderDepartmentFuel() {
 }
 
 function renderVehicleFuel() {
-  const vehicles = buildVehicleSelectorRows(state.data.vehicleFuel, state.filters.fuelYear, state.filters.selectedVehicles);
+  const vehicles = buildVehicleSelectorRows(state.data.vehicleFuel ?? [], state.filters.fuelYear, state.filters.selectedVehicles);
   const search = state.filters.vehicleSearch.trim().toLowerCase();
   const filtered = vehicles.filter((vehicle) => [
     vehicle.assetCode,
@@ -3152,7 +3329,7 @@ function renderVehicleSelectorList(rows) {
 }
 
 function renderVehicleFuelChart() {
-  const { months, series } = buildVehicleFuelSeries(state.data.vehicleFuel, state.filters.fuelYear, state.filters.selectedVehicles);
+  const { months, series } = buildVehicleFuelSeries(state.data.vehicleFuel ?? [], state.filters.fuelYear, state.filters.selectedVehicles);
   setChart("vehicleFuel", "chartVehicleFuel", {
     ...baseChartOption,
     legend: { type: "scroll", data: series.map((item) => item.label), textStyle: { color: "#cbd5e6" } },
@@ -3434,6 +3611,87 @@ function downloadDataUrl(filename, url) {
   link.href = url;
   link.download = filename;
   link.click();
+}
+
+const ASSET_DETAIL_EXPORTS = {
+  disposal: {
+    endpoint: "/api/assets/disposal/details",
+    filename: "资产处置申请单明细.csv",
+    params: () => ({ department: $("#assetDisposalDepartment").value }),
+    columns: [
+      ["处置申请单号", "documentNo"], ["处置类型", "disposalType"], ["处置单描述", "disposalDescription"], ["使用部门", "department"],
+      ["部门描述", "departmentDescription"], ["创建人", "creator"], ["创建日期", "createDate"], ["状态", "status"],
+      ["状态描述", "statusDescription"], ["提报日期", "submitDate"], ["确认日期", "confirmDate"], ["处置原因", "disposalReason"],
+      ["资产编码", "assetCode"], ["资产名称", "assetName"], ["固定资产编码", "fixedAssetCode"], ["维护部门", "maintenanceDepartment"],
+      ["单位", "unit"], ["规格型号", "specification"], ["供应商", "supplier"], ["品牌", "brand"], ["资产来源", "assetSource"],
+      ["设备价值（元）", "equipmentValue"], ["分摊价值（元）", "allocatedValue"], ["资产价值（元）", "assetValue"], ["投运日期", "operationDate"],
+      ["验收移交时间", "handoverTime"], ["备注", "remarks"]
+    ]
+  },
+  inventory: {
+    endpoint: "/api/assets/inventory/details",
+    filename: "资产盘点单明细.csv",
+    params: () => ({ year: $("#assetInventoryYear").value }),
+    columns: [
+      ["盘点单号", "inventoryNo"], ["盘点年份", "inventoryYear"], ["盘点类型", "inventoryType"], ["盘点单描述", "inventoryDescription"],
+      ["部门", "department"], ["部门描述", "departmentDescription"], ["创建日期", "createDate"], ["状态", "status"], ["状态描述", "statusDescription"],
+      ["盘点单创建人", "inventoryCreator"], ["盘点清单行创建人", "inventoryLineCreator"], ["盘点行更新人", "inventoryLineUpdater"], ["创建人描述", "creatorDescription"],
+      ["资产编码", "assetCode"], ["资产描述", "assetDescription"], ["规格型号", "specification"], ["存放位置", "storageLocation"], ["安装位置", "installationLocation"],
+      ["设备价值（元）", "equipmentValue"], ["分摊价值（元）", "allocatedValue"], ["资产价值（元）", "assetValue"], ["固定资产编码", "fixedAssetCode"],
+      ["盘点状态", "inventoryStatus"], ["盘点方式", "inventoryMethod"]
+    ]
+  },
+  transfer: {
+    endpoint: "/api/assets/transfer/details",
+    filename: "资产转移单明细.csv",
+    params: () => ({
+      "document-no": $("#assetTransferDocumentNo").value.trim(),
+      "from-department": $("#assetTransferFromDepartment").value
+    }),
+    columns: [
+      ["调拨单号", "transferNo"], ["转出部门", "fromDepartment"], ["转入部门", "toDepartment"], ["创建日期", "createDate"],
+      ["状态", "status"], ["状态描述", "statusDescription"], ["盘点单创建人", "inventoryCreator"], ["设备编码", "equipmentCode"],
+      ["设备描述", "equipmentDescription"], ["设备大类", "equipmentCategory"], ["设备分类描述", "equipmentCategoryDescription"], ["使用部门", "department"],
+      ["资产转移单状态", "transferStatus"], ["规格型号", "specification"], ["安装位置", "installationLocation"], ["安装位置描述", "installationDescription"],
+      ["存放位置", "storageLocation"], ["固定资产编码", "fixedAssetCode"], ["单位", "unit"], ["品牌", "brand"], ["供应商", "supplier"],
+      ["设备价值（元）", "equipmentValue"], ["资产价值（元）", "assetValue"], ["分摊价值（元）", "allocatedValue"], ["生产厂家", "manufacturer"],
+      ["投运日期", "operationDate"], ["出厂编号", "serialNumber"], ["资产来源", "assetSource"], ["科室", "office"], ["使用人", "userName"],
+      ["验收移交时间", "handoverTime"], ["虚拟设备", "virtualEquipment"], ["父设备", "parentEquipment"], ["备注", "remarks"], ["详细说明", "details"],
+      ["调拨批准时间", "transferApprovalTime"]
+    ]
+  }
+};
+
+function csvCell(value) {
+  const text = value === null || value === undefined ? "" : String(value);
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function downloadCsv(filename, headers, rows) {
+  const content = "\ufeff" + [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");
+  triggerBlobDownload(filename, new Blob([content], { type: "text/csv;charset=utf-8" }));
+}
+
+async function downloadAssetDetailCsv(type) {
+  const config = ASSET_DETAIL_EXPORTS[type];
+  if (!config) return;
+  const params = new URLSearchParams();
+  Object.entries(config.params()).forEach(([key, value]) => {
+    if (value && value !== "全部") params.set(key, value);
+  });
+  const button = document.querySelector(`#downloadAsset${type[0].toUpperCase()}${type.slice(1)}Btn`);
+  if (button) button.disabled = true;
+  try {
+    const response = await fetch(`${config.endpoint}?${params.toString()}`);
+    const result = await response.json();
+    if (!response.ok || !result.ok) throw new Error(result.error || `HTTP ${response.status}`);
+    const rows = Array.isArray(result.data) ? result.data : [];
+    downloadCsv(config.filename, config.columns.map(([label]) => label), rows.map((row) => config.columns.map(([, key]) => row[key])));
+  } catch (error) {
+    alert(`明细下载失败：${error.message}`);
+  } finally {
+    if (button) button.disabled = false;
+  }
 }
 
 const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";

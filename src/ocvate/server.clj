@@ -53,7 +53,35 @@
   (json-response {:ok true :data data}))
 
 (defn- err [msg]
-  (json-response {:ok false :error msg}))
+  (json-response {:ok false :error msg})) (def ^:private access-key
+  "固定访问密钥：主系统跳转时附加在 ?key= 后。"
+  "69a09523e8ef7f221db62df835a6998781a10c9aee973d671cbd124409fc5c4e") (def ^:private access-cookie
+  "通过 key 校验后写入的会话 Cookie 值。"
+  "ocvate-authorized") (defn- authorized? [req]
+  (= (get-in req [:cookies "ocvate_access" :value]) access-cookie)) (defn- access-gate
+  "要求页面和 API 先通过固定 key 校验；成功后只清除 URL 中的 key。"
+  [handler]
+  (fn [req]
+    (let [uri (or (:uri req) "/")
+          supplied-key (get-in req [:params :key])
+          query-without-key (->> (clojure.string/split (or (:query-string req) "") #"&")
+                                 (remove #(clojure.string/starts-with? % "key="))
+                                 (clojure.string/join "&"))
+          redirect-uri (if (seq query-without-key)
+                         (str uri "?" query-without-key)
+                         uri)
+          health? (= uri "/api/health")
+          page-entry? (and (= supplied-key access-key)
+                           (not (clojure.string/starts-with? uri "/api/")))]
+      (cond
+        (authorized? req) (handler req)
+        health? (handler req)
+        page-entry? (-> (resp/redirect redirect-uri)
+                        (resp/set-cookie "ocvate_access" access-cookie
+                                          {:http-only true :same-site :lax :max-age 28800}))
+        :else (-> (resp/response "无访问权限")
+                  (resp/status 403)
+                  (resp/content-type "text/plain; charset=utf-8"))))))
 
 ;; ─── 健康检查 ───
 
@@ -178,6 +206,23 @@
       (ok data))
     (catch Exception e (err (.getMessage e)))))
 
+(defn api-asset-disposal-details [req]
+  (try
+    (ok (transform-rows (db/get-asset-disposal-details (get-in req [:params :department]))))
+    (catch Exception e (err (.getMessage e)))))
+
+(defn api-asset-inventory-details [req]
+  (try
+    (ok (transform-rows (db/get-asset-inventory-details (get-in req [:params :year]))))
+    (catch Exception e (err (.getMessage e)))))
+
+(defn api-asset-transfer-details [req]
+  (try
+    (ok (transform-rows (db/get-asset-transfer-details
+                         (get-in req [:params :document-no])
+                         (get-in req [:params :from-department]))))
+    (catch Exception e (err (.getMessage e)))))
+
 ;; ──────────────────────────────────────────────────────────────────────
 ;; 静态文件服务
 ;; ──────────────────────────────────────────────────────────────────────
@@ -205,6 +250,9 @@
   (GET "/api/outbound/summary"          [] api-outbound-summary)
   (GET "/api/outbound/details"          [] api-outbound-details)
   (GET "/api/outbound/details/search"   [warehouse department] api-outbound-details-filtered)
+  (GET "/api/assets/disposal/details"  [department] api-asset-disposal-details)
+  (GET "/api/assets/inventory/details" [year] api-asset-inventory-details)
+  (GET "/api/assets/transfer/details"  [document-no from-department] api-asset-transfer-details)
   (GET "/api/repairs"                   [] api-repairs)
   (GET "/api/repairs/single-device"     [] api-repairs-single-device)
   (GET "/api/repairs/department"        [] api-repairs-department)
@@ -229,6 +277,7 @@
 
 (def app
   (-> app-routes
+      access-gate
       (wrap-defaults (assoc-in site-defaults [:security :anti-forgery] false))
       wrap-not-modified))
 

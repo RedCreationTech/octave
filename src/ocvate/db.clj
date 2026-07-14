@@ -38,7 +38,11 @@
   (with-open [c (.getConnection ^HikariDataSource (datasource))] (f {:connection c})))
 
 (defn query [s & p]
-  (with-conn* (fn [db] (apply jdbc/query db (if (sequential? (first p)) (concat [s] p) (conj p s))))))
+  (with-conn* (fn [db]
+                (let [sql-params (if (and (= 1 (count p)) (sequential? (first p)))
+                                   (into [s] (first p))
+                                   (into [s] p))]
+                  (jdbc/query db sql-params)))))
 
 (defn execute! [s & p]
   (with-conn* (fn [db] (apply jdbc/execute! db (if (sequential? (first p)) (concat [s] p) (conj p s))))))
@@ -73,6 +77,59 @@
 (defn get-vehicle-fuel ([] (get-vehicle-fuel {})) ([_]
   (query (str "SELECT * FROM " (view :vehicleFuel) " ORDER BY year, month"))))
 
+(defn- query-asset-detail [view-key columns order-by filters]
+  (let [conditions (keep (fn [[column value]]
+                           (when (some? value)
+                             [(str "\"" column "\" = ?") value])) filters)
+        sql (str "SELECT " (str/join ", " columns) " FROM " (view view-key)
+                 (when (seq conditions)
+                   (str " WHERE " (str/join " AND " (map first conditions))))
+                 " ORDER BY " order-by)
+        params (map second conditions)]
+    (if (seq params)
+      (query sql (vec params))
+      (query sql))))
+
+(defn get-asset-disposal-details [department]
+  (query-asset-detail :assetDisposal
+                      ["\"处置申请单号\" AS document_no" "\"处置类型\" AS disposal_type" "\"处置单描述\" AS disposal_description"
+                       "\"使用部门\" AS department" "\"部门描述\" AS department_description" "\"创建人\" AS creator" "\"创建日期\" AS create_date"
+                       "\"状态\" AS status" "\"状态描述\" AS status_description" "\"提报日期\" AS submit_date" "\"确认日期\" AS confirm_date"
+                       "\"处置原因\" AS disposal_reason" "\"资产编码\" AS asset_code" "\"资产名称\" AS asset_name" "\"固定资产编码\" AS fixed_asset_code"
+                       "\"维护部门\" AS maintenance_department" "\"单位\" AS unit" "\"规格型号\" AS specification" "\"供应商\" AS supplier"
+                       "\"品牌\" AS brand" "\"资产来源\" AS asset_source" "\"设备价值（元）\" AS equipment_value"
+                       "\"分摊价值（元）\" AS allocated_value" "\"资产价值（元）\" AS asset_value" "\"投运日期\" AS operation_date"
+                       "\"验收移交时间\" AS handover_time" "\"备注\" AS remarks"]
+                      "\"创建日期\" DESC"
+                      [["使用部门" (not-empty department)]]))
+
+(defn get-asset-inventory-details [year]
+  (query-asset-detail :assetInventory
+                      ["\"盘点单号\" AS inventory_no" "\"盘点年份\" AS inventory_year" "\"盘点类型\" AS inventory_type"
+                       "\"盘点单描述\" AS inventory_description" "\"部门\" AS department" "\"部门描述\" AS department_description"
+                       "\"创建日期\" AS create_date" "\"状态\" AS status" "\"状态描述\" AS status_description" "\"盘点单创建人\" AS inventory_creator"
+                       "\"盘点清单行创建人\" AS inventory_line_creator" "\"盘点行更新人\" AS inventory_line_updater" "\"创建人描述\" AS creator_description"
+                       "\"资产编码\" AS asset_code" "\"资产描述\" AS asset_description" "\"规格型号\" AS specification" "\"存放位置\" AS storage_location"
+                       "\"安装位置\" AS installation_location" "\"设备价值（元）\" AS equipment_value" "\"分摊价值（元）\" AS allocated_value"
+                       "\"资产价值（元）\" AS asset_value" "\"固定资产编码\" AS fixed_asset_code" "\"盘点状态\" AS inventory_status" "\"盘点方式\" AS inventory_method"]
+                      "\"盘点年份\" DESC, \"创建日期\" DESC"
+                      [["盘点年份" (when year (Integer/parseInt (str year)))]]))
+
+(defn get-asset-transfer-details [document-no from-department]
+  (query-asset-detail :assetTransfer
+                      ["\"调拨单号\" AS transfer_no" "\"转出部门\" AS from_department" "\"转入部门\" AS to_department" "\"创建日期\" AS create_date"
+                       "\"状态\" AS status" "\"状态描述\" AS status_description" "\"盘点单创建人\" AS inventory_creator" "\"设备编码\" AS equipment_code"
+                       "\"设备描述\" AS equipment_description" "\"设备大类\" AS equipment_category" "\"设备分类描述\" AS equipment_category_description"
+                       "\"使用部门\" AS department" "\"资产转移单状态\" AS transfer_status" "\"规格型号\" AS specification"
+                       "\"安装位置\" AS installation_location" "\"安装位置描述\" AS installation_description" "\"存放位置\" AS storage_location"
+                       "\"固定资产编码\" AS fixed_asset_code" "\"单位\" AS unit" "\"品牌\" AS brand" "\"供应商\" AS supplier"
+                       "\"设备价值（元）\" AS equipment_value" "\"资产价值（元）\" AS asset_value" "\"分摊价值（元）\" AS allocated_value"
+                       "\"生产厂家\" AS manufacturer" "\"投运日期\" AS operation_date" "\"出厂编号\" AS serial_number" "\"资产来源\" AS asset_source"
+                       "\"科室\" AS office" "\"使用人\" AS user_name" "\"验收移交时间\" AS handover_time" "\"虚拟设备\" AS virtual_equipment"
+                       "\"父设备\" AS parent_equipment" "\"备注\" AS remarks" "\"详细说明\" AS details" "\"调拨批准时间\" AS transfer_approval_time"]
+                      "\"创建日期\" DESC"
+                      [["调拨单号" (not-empty document-no)] ["转出部门" (not-empty from-department)]]))
+
 (defn get-all-data []
   {:departments (get-assets-by-dept) :assetTypes (get-assets-by-type)
    :depreciation (get-depreciation-summary) :annualDynamics (get-annual-dynamics)
@@ -93,7 +150,10 @@
    "CREATE TABLE IF NOT EXISTS monthly_fuel (year INTEGER,month INTEGER,fuel_volume REAL)"
    "CREATE TABLE IF NOT EXISTS department_fuel (year INTEGER,month INTEGER,department_code TEXT,department TEXT,fuel_type_code TEXT,fuel_type TEXT,fuel_volume REAL,total_ratio REAL)"
    "CREATE TABLE IF NOT EXISTS department_energy (year INTEGER,month INTEGER,department TEXT,fuel_volume REAL,energy_type TEXT,energy_method TEXT,energy REAL,mom REAL,yoy REAL)"
-   "CREATE TABLE IF NOT EXISTS vehicle_fuel (year INTEGER,month INTEGER,asset_code TEXT,equipment_name TEXT,plate_no TEXT,fuel_volume REAL)"])
+   "CREATE TABLE IF NOT EXISTS vehicle_fuel (year INTEGER,month INTEGER,asset_code TEXT,equipment_name TEXT,plate_no TEXT,fuel_volume REAL)"
+   "CREATE TABLE IF NOT EXISTS u5_fu_zpczsqdmx01 (\"处置申请单号\" TEXT,\"处置类型\" TEXT,\"处置单描述\" TEXT,\"使用部门\" TEXT,\"部门描述\" TEXT,\"创建人\" TEXT,\"创建日期\" TEXT,\"状态\" TEXT,\"状态描述\" TEXT,\"提报日期\" TEXT,\"确认日期\" TEXT,\"处置原因\" TEXT,\"资产编码\" TEXT,\"资产名称\" TEXT,\"固定资产编码\" TEXT,\"维护部门\" TEXT,\"单位\" TEXT,\"规格型号\" TEXT,\"供应商\" TEXT,\"品牌\" TEXT,\"资产来源\" TEXT,\"设备价值（元）\" REAL,\"分摊价值（元）\" REAL,\"资产价值（元）\" REAL,\"投运日期\" TEXT,\"验收移交时间\" TEXT,\"备注\" TEXT)"
+   "CREATE TABLE IF NOT EXISTS u5_fu_zppdqd01 (\"盘点单号\" TEXT,\"盘点年份\" INTEGER,\"盘点类型\" TEXT,\"盘点单描述\" TEXT,\"部门\" TEXT,\"部门描述\" TEXT,\"创建日期\" TEXT,\"状态\" TEXT,\"状态描述\" TEXT,\"盘点单创建人\" TEXT,\"盘点清单行创建人\" TEXT,\"盘点行更新人\" TEXT,\"创建人描述\" TEXT,\"资产编码\" TEXT,\"资产描述\" TEXT,\"规格型号\" TEXT,\"存放位置\" TEXT,\"安装位置\" TEXT,\"设备价值（元）\" REAL,\"分摊价值（元）\" REAL,\"资产价值（元）\" REAL,\"固定资产编码\" TEXT,\"盘点状态\" TEXT,\"盘点方式\" TEXT)"
+   "CREATE TABLE IF NOT EXISTS u5_fu_zpzyqdmx01 (\"调拨单号\" TEXT,\"转出部门\" TEXT,\"转入部门\" TEXT,\"创建日期\" TEXT,\"状态\" TEXT,\"状态描述\" TEXT,\"盘点单创建人\" TEXT,\"设备编码\" TEXT,\"设备描述\" TEXT,\"设备大类\" TEXT,\"设备分类描述\" TEXT,\"使用部门\" TEXT,\"资产转移单状态\" TEXT,\"规格型号\" TEXT,\"安装位置\" TEXT,\"安装位置描述\" TEXT,\"存放位置\" TEXT,\"固定资产编码\" TEXT,\"单位\" TEXT,\"品牌\" TEXT,\"供应商\" TEXT,\"设备价值（元）\" REAL,\"资产价值（元）\" REAL,\"分摊价值（元）\" REAL,\"生产厂家\" TEXT,\"投运日期\" TEXT,\"出厂编号\" TEXT,\"资产来源\" TEXT,\"科室\" TEXT,\"使用人\" TEXT,\"验收移交时间\" TEXT,\"虚拟设备\" TEXT,\"父设备\" TEXT,\"备注\" TEXT,\"详细说明\" TEXT,\"调拨批准时间\" TEXT)"])
 
 (def sqlite-init-data
   [(str "DELETE FROM dept_rank")
