@@ -3619,13 +3619,13 @@ const ASSET_DETAIL_EXPORTS = {
     filename: "资产处置申请单明细.csv",
     params: () => ({ department: $("#assetDisposalDepartment").value }),
     columns: [
-      ["处置申请单号", "documentNo"], ["处置类型", "disposalType"], ["处置单描述", "disposalDescription"], ["使用部门", "department"],
-      ["部门描述", "departmentDescription"], ["创建人", "creator"], ["创建日期", "createDate"], ["状态", "status"],
-      ["状态描述", "statusDescription"], ["提报日期", "submitDate"], ["确认日期", "confirmDate"], ["处置原因", "disposalReason"],
-      ["资产编码", "assetCode"], ["资产名称", "assetName"], ["固定资产编码", "fixedAssetCode"], ["维护部门", "maintenanceDepartment"],
-      ["单位", "unit"], ["规格型号", "specification"], ["供应商", "supplier"], ["品牌", "brand"], ["资产来源", "assetSource"],
-      ["设备价值（元）", "equipmentValue"], ["分摊价值（元）", "allocatedValue"], ["资产价值（元）", "assetValue"], ["投运日期", "operationDate"],
-      ["验收移交时间", "handoverTime"], ["备注", "remarks"]
+      ["处置申请单号", "applyNo"], ["处置类型", "disposeType"], ["处置单描述", "disposeDesc"], ["使用部门", "useDept"],
+      ["部门描述", "deptDesc"], ["创建人", "creator"], ["创建日期", "createTime"], ["状态", "status"],
+      ["状态描述", "statusDesc"], ["提报日期", "reportTime"], ["确认日期", "confirmTime"], ["处置原因", "disposeReason"],
+      ["资产编码", "assetCode"], ["资产名称", "assetName"], ["固定资产编码", "fixedCode"], ["维护部门", "maintDept"],
+      ["单位", "unit"], ["规格型号", "model"], ["供应商", "supplier"], ["品牌", "brand"], ["资产来源", "source"],
+      ["设备价值（元）", "equipValue"], ["分摊价值（元）", "allocValue"], ["资产价值（元）", "assetValue"], ["投运日期", "operateDate"],
+      ["验收移交时间", "handoverTime"], ["备注", "remark"]
     ]
   },
   inventory: {
@@ -3633,12 +3633,12 @@ const ASSET_DETAIL_EXPORTS = {
     filename: "资产盘点单明细.csv",
     params: () => ({ year: $("#assetInventoryYear").value }),
     columns: [
-      ["盘点单号", "inventoryNo"], ["盘点年份", "inventoryYear"], ["盘点类型", "inventoryType"], ["盘点单描述", "inventoryDescription"],
-      ["部门", "department"], ["部门描述", "departmentDescription"], ["创建日期", "createDate"], ["状态", "status"], ["状态描述", "statusDescription"],
-      ["盘点单创建人", "inventoryCreator"], ["盘点清单行创建人", "inventoryLineCreator"], ["盘点行更新人", "inventoryLineUpdater"], ["创建人描述", "creatorDescription"],
-      ["资产编码", "assetCode"], ["资产描述", "assetDescription"], ["规格型号", "specification"], ["存放位置", "storageLocation"], ["安装位置", "installationLocation"],
-      ["设备价值（元）", "equipmentValue"], ["分摊价值（元）", "allocatedValue"], ["资产价值（元）", "assetValue"], ["固定资产编码", "fixedAssetCode"],
-      ["盘点状态", "inventoryStatus"], ["盘点方式", "inventoryMethod"]
+      ["盘点单号", "checkNo"], ["盘点年份", "checkYear"], ["盘点类型", "checkType"], ["盘点单描述", "checkDesc"],
+      ["部门", "dept"], ["部门描述", "deptDesc"], ["创建日期", "createTime"], ["状态", "status"], ["状态描述", "statusDesc"],
+      ["盘点单创建人", "checkCreator"], ["盘点清单行创建人", "lineCreator"], ["盘点行更新人", "lineUpdater"], ["创建人描述", "creatorDesc"],
+      ["资产编码", "assetCode"], ["资产描述", "assetDesc"], ["规格型号", "model"], ["存放位置", "storeLoc"], ["安装位置", "installLoc"],
+      ["设备价值（元）", "equipValue"], ["分摊价值（元）", "allocValue"], ["资产价值（元）", "assetValue"], ["固定资产编码", "fixedCode"],
+      ["盘点状态", "checkStatus"], ["盘点方式", "checkMethod"]
     ]
   },
   transfer: {
@@ -3649,15 +3649,15 @@ const ASSET_DETAIL_EXPORTS = {
       "from-department": $("#assetTransferFromDepartment").value
     }),
     columns: [
-      ["调拨单号", "transferNo"], ["转出部门", "fromDepartment"], ["转入部门", "toDepartment"], ["创建日期", "createDate"],
-      ["状态", "status"], ["状态描述", "statusDescription"], ["盘点单创建人", "inventoryCreator"], ["设备编码", "equipmentCode"],
-      ["设备描述", "equipmentDescription"], ["设备大类", "equipmentCategory"], ["设备分类描述", "equipmentCategoryDescription"], ["使用部门", "department"],
-      ["资产转移单状态", "transferStatus"], ["规格型号", "specification"], ["安装位置", "installationLocation"], ["安装位置描述", "installationDescription"],
-      ["存放位置", "storageLocation"], ["固定资产编码", "fixedAssetCode"], ["单位", "unit"], ["品牌", "brand"], ["供应商", "supplier"],
-      ["设备价值（元）", "equipmentValue"], ["资产价值（元）", "assetValue"], ["分摊价值（元）", "allocatedValue"], ["生产厂家", "manufacturer"],
-      ["投运日期", "operationDate"], ["出厂编号", "serialNumber"], ["资产来源", "assetSource"], ["科室", "office"], ["使用人", "userName"],
-      ["验收移交时间", "handoverTime"], ["虚拟设备", "virtualEquipment"], ["父设备", "parentEquipment"], ["备注", "remarks"], ["详细说明", "details"],
-      ["调拨批准时间", "transferApprovalTime"]
+      ["调拨单号", "transferNo"], ["转出部门", "outDept"], ["转入部门", "inDept"], ["创建日期", "createTime"],
+      ["单据描述", "transferDesc"], ["盘点单创建人", "checkCreator"], ["设备编码", "equipCode"],
+      ["设备描述", "equipDesc"], ["设备大类", "equipType"], ["设备分类描述", "equipTypeDesc"], ["使用部门", "useDept"],
+      ["规格型号", "model"], ["安装位置", "installLoc"], ["安装位置描述", "installDesc"],
+      ["存放位置", "storeLoc"], ["固定资产编码", "fixedCode"], ["单位", "unit"], ["品牌", "brand"], ["供应商", "supplier"],
+      ["设备价值（元）", "equipValue"], ["资产价值（元）", "assetValue"], ["分摊价值（元）", "allocValue"], ["生产厂家", "maker"],
+      ["投运日期", "operateDate"], ["出厂编号", "serialNo"], ["资产来源", "source"], ["科室", "office"], ["使用人", "userName"],
+      ["验收移交时间", "handoverTime"], ["虚拟设备", "virtualFlag"], ["父设备", "parentCode"], ["备注", "remark"], ["详细说明", "detail"],
+      ["调拨批准时间", "approveTime"]
     ]
   }
 };
