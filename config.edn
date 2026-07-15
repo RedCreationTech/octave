@@ -43,9 +43,9 @@
          :departmentFuel     "department_fuel"
          :departmentEnergy   "department_energy"
          :vehicleFuel        "vehicle_fuel"
-         :assetDisposal      "u5_fu_zpczsqdmx01"
-         :assetInventory     "u5_fu_zppdqd01"
-         :assetTransfer      "u5_fu_zpzyqdmx01"}
+         :assetDisposal      "EAMPROD.u5_fu_zpczsqdmx01"
+         :assetInventory     "EAMPROD.u5_fu_zppdqd01"
+         :assetTransfer      "EAMPROD.u5_fu_zpzyqdmx01"}
 
  :server
  {:port 8080                    ;; Web 服务器监听端口

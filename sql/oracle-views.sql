@@ -181,21 +181,21 @@ FROM your_vehicle_fuel_table;  -- ← 替换为实际表名
 -- ============================================================
 -- 13-15. 业务系统已提供的资产明细视图（直接读取，不在本脚本重复创建）
 -- ============================================================
--- u5_fu_zpczsqdmx01  资产处置申请单明细
+-- EAMPROD.u5_fu_zpczsqdmx01  资产处置申请单明细
 -- 字段: apply_no, dispose_type, dispose_desc, use_dept, dept_desc, creator,
 --       create_time, status, status_desc, report_time, confirm_time,
 --       dispose_reason, asset_code, asset_name, fixed_code, maint_dept, unit,
 --       model, supplier, brand, source, equip_value, alloc_value, asset_value,
 --       operate_date, handover_time, remark
 --
--- u5_fu_zppdqd01     资产盘点单明细
+-- EAMPROD.u5_fu_zppdqd01     资产盘点单明细
 -- 字段: check_no, check_year, check_type, check_desc, dept, dept_desc,
 --       create_time, status, status_desc, check_creator, line_creator,
 --       line_updater, creator_desc, asset_code, asset_desc, model, store_loc,
 --       install_loc, equip_value, alloc_value, asset_value, fixed_code,
 --       check_status, check_method
 --
--- u5_fu_zpzyqdmx01   资产转移单明细
+-- EAMPROD.u5_fu_zpzyqdmx01   资产转移单明细
 -- 字段: transfer_no, out_dept, in_dept, create_time, status, status_desc,
 --       check_creator, equip_code, equip_desc, equip_type, equip_type_desc,
 --       use_dept, transfer_desc, model, install_loc, install_desc, store_loc,
